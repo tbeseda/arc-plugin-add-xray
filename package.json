@@ -1,0 +1,31 @@
+{
+  "name": "arc-plugin-add-xray",
+  "version": "0.0.2",
+  "description": "Architect 10+ plugin for adding X-Ray Tracing to Lambda functions.",
+  "main": "src/index.js",
+  "scripts": {
+    "lint": "eslint . --fix",
+    "test": "tape test/* | tap-arc"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tbeseda/arc-plugin-add-xray.git"
+  },
+  "author": "Taylor Beseda <tbeseda@gmail.com>",
+  "license": "Apache-2.0",
+  "files": [
+    "src/index.js"
+  ],
+  "devDependencies": {
+    "@architect/eslint-config": "^2.0.1",
+    "eslint": "^8.7.0",
+    "tap-arc": "^0.1.2",
+    "tape": "^5.5.0"
+  },
+  "eslintConfig": {
+    "extends": "@architect/eslint-config"
+  }
+}
