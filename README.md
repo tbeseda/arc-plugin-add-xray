@@ -12,11 +12,11 @@ npm i -D arc-plugin-add-xray
 # ... in your app.arc
 
 @plugins
-arc-plugin-add-xray # enable "add-xray"
+arc-plugin-add-xray # enable "@xray"
 
 @xray
-environments staging production # defaults to both staging
-http # add to all @http functions
+environments staging production # defaults to only staging
+http # add X-Ray to all @http functions
 scheduled # can be any Lambda pragma
 ```
 
