@@ -1,4 +1,4 @@
-const MY_NAME = 'add-xray'
+const MY_NAME = 'xray'
 
 function log (msg, ...rest) {
   console.log(`<@${MY_NAME}>: ${msg}`, ...rest)
@@ -7,37 +7,21 @@ function log (msg, ...rest) {
 module.exports = {
   deploy: {
     start: async (params) => {
-      const {
-        arc,
-        cloudformation,
-        inventory: { inv },
-        stage,
-      } = params
+      const { arc, cloudformation, inventory, stage } = params
+      const { inv } = inventory
       const lambdaTypes = inv._arc.pragmas.lambdas
 
       const config = arc[MY_NAME]
 
       if (config) {
-        const settings = {
-          environments: [ 'staging', 'production' ],
-          wholePragmas: [],
-          specificLambdas: [],
-        }
+        let defaultStages = [ 'staging' ]
+        const configuredPragmas = []
 
-        // parse options and create settings
+        // parse project manifest @xray options
         for (const option of config) {
           if (Array.isArray(option)) {
-            const first = option[0]
-            const rest = [ ...option.slice(1) ]
-
-            if (first === 'environments') {
-              settings.environments = rest
-            }
-            else if (lambdaTypes.includes(first)) {
-              settings.specificLambdas.push({
-                type: first,
-                name: rest.join(' '),
-              })
+            if (option[0] === 'environments') {
+              defaultStages = [ ...option.slice(1) ]
             }
             else {
               log('invalid config:', option)
@@ -45,7 +29,10 @@ module.exports = {
           }
           else if (typeof option === 'string') {
             if (lambdaTypes.includes(option)) {
-              settings.wholePragmas.push(option)
+              configuredPragmas.push(option)
+            }
+            else {
+              log('invalid pragma:', option)
             }
           }
           else {
@@ -53,40 +40,32 @@ module.exports = {
           }
         }
 
-        // log('settings', settings);
-
-        if (!settings.environments.includes(stage)) {
+        if (!defaultStages.includes(stage)) {
           log(`"${stage}" environment not included in configuration.`)
           return
         }
 
         const codePaths = []
-        if (settings.wholePragmas.length || settings.specificLambdas.length) {
-          for (const pragma of settings.wholePragmas) {
-            if (inv[pragma]) {
-              for (const fn of inv[pragma]) {
-                codePaths.push(fn.src)
-              }
-            }
-            else {
-              log(`no functions for pragma "@${pragma}"`)
-            }
-          }
-          // and mapping specificLambdas entries to inv type by name
-          for (const lambda of settings.specificLambdas) {
-            if (inv[lambda.type]) {
-              const found = inv[lambda.type].find((fn) => fn.name === lambda.name)
-              if (found) {
-                codePaths.push(found.src)
-              }
-              else {
-                log(`unable to find function for`, lambda)
-              }
-            }
+
+        // look for config.arc xray settings
+        for (const path in inv.lambdasBySrcDir) {
+          const fn = inv.lambdasBySrcDir[path]
+          if (fn.config?.xray) {
+            codePaths.push(path)
           }
         }
 
-        // log('paths', codePaths);
+        // collect configured pragma's lambda src dirs
+        for (const pragma of configuredPragmas) {
+          if (inv[pragma]) {
+            for (const fn of inv[pragma]) {
+              codePaths.push(fn.build || fn.src)
+            }
+          }
+          else {
+            log(`no functions for pragma "@${pragma}"`)
+          }
+        }
 
         const cfLambdaNames = Object.keys(cloudformation.Resources).filter((name) => {
           return cloudformation.Resources[name].Type === 'AWS::Serverless::Function'
@@ -111,14 +90,42 @@ module.exports = {
           }
 
           log(`Added X-Ray tracing to ${count} functions.`)
+          if (count !== codePaths.length) {
+            log(`Expected to add to ${codePaths.length} functions!`)
+          }
         }
         else {
+          // add X-Ray to all functions
           for (const name of cfLambdaNames) {
             cloudformation.Resources[name].Properties.Tracing = 'Active'
           }
 
           log(`Added X-Ray tracing to ${cfLambdaNames.length} functions.`)
         }
+
+        // add recommended X-Ray policy
+        // https://docs.aws.amazon.com/xray/latest/devguide/security_iam_id-based-policy-examples.html#xray-permissions-managedpolicies
+        cloudformation.Resources.Role.Properties.Policies.push({
+          PolicyName: 'ArcXrayPolicy',
+          PolicyDocument: {
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: [
+                  'xray:PutTraceSegments',
+                  'xray:PutTelemetryRecords',
+                  'xray:GetSamplingRules',
+                  'xray:GetSamplingTargets',
+                  'xray:GetSamplingStatisticSummaries',
+                ],
+                Resource: [ '*' ],
+              },
+            ],
+          },
+        })
+
+        // alternatively, add arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+        // to each Resources[function].Properties.ManagedPolicyArns[]
 
         return cloudformation
       }

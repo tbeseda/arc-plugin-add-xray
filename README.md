@@ -1,4 +1,6 @@
-# AWS "X-Ray Tracing" for Lambdas deployed with [Architect](https://arc.codes)
+# arc-plugin-add-xray
+
+> AWS _"X-Ray Tracing"_ for Lambdas deployed with [Architect](https://arc.codes).
 
 ## Usage
 
@@ -9,23 +11,26 @@ npm i -D arc-plugin-add-xray
 ```sh
 # ... in your app.arc
 
-@aws
-policies
-  AWSXRayDaemonWriteAccess # specific policy for X-Ray is REQUIRED!
-  architect-default-policies # restore Arc's least-privilege permissions
-
 @plugins
 arc-plugin-add-xray # enable "add-xray"
 
-@add-xray
-environments production # specify environments. defaults to both: "staging production"
-scheduled # add Tracing to all @scheduled functions, can be any lambda pragma
-events foo-bar # add Tracing to a specific event
-http get /messages # add Tracing to a specific @http function
-http post /messages # the http method (post in this case) is always required
+@xray
+environments staging production # defaults to both staging
+http # add to all @http functions
+scheduled # can be any Lambda pragma
 ```
 
-Note: providing no options or just `environments` will add X-Ray to ALL Lambda functions
+To enable _X-Ray Tracing_ in individual functions add `xray true` to a function's `config.arc`:
+
+```sh
+# ./src/events/foobar
+
+@aws
+xray true
+```
+
+> ℹ️  To enable _X-Ray Tracing_ for ALL Lambda functions, do not set a pragma in `app.arc`'s `@xray` or set `xray true` in a `config.arc`.  
+> `environments` can be still be set under `@xray` in `app.arc`.
 
 ## Resources
 
