@@ -71,7 +71,7 @@ module.exports = {
           return cloudformation.Resources[name].Type === 'AWS::Serverless::Function'
         })
 
-        if (codePaths) {
+        if (codePaths.length > 0) {
           let count = 0
           for (const path of codePaths) {
             let matched = false
