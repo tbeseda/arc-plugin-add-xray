@@ -4,8 +4,9 @@
   "description": "Architect 10+ plugin for adding X-Ray Tracing to Lambda functions.",
   "main": "src/index.js",
   "scripts": {
-    "lint": "eslint . --fix",
-    "test": "npm run lint && tape test/* | tap-arc"
+    "rome": "npx rome ci test/ src/",
+    "format": "npx rome format test/ src/",
+    "test": "npm run rome && tape test/* | tap-arc"
   },
   "engines": {
     "node": ">=14"
@@ -20,12 +21,8 @@
     "src/index.js"
   ],
   "devDependencies": {
-    "@architect/eslint-config": "^2.0.1",
-    "eslint": "^8.7.0",
-    "tap-arc": "^0.1.2",
-    "tape": "^5.5.0"
-  },
-  "eslintConfig": {
-    "extends": "@architect/eslint-config"
+    "rome": "^10.0.1",
+    "tap-arc": "^0.3.5",
+    "tape": "^5.6.1"
   }
 }
