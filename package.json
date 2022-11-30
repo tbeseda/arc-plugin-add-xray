@@ -1,6 +1,6 @@
 {
   "name": "arc-plugin-add-xray",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Architect 10+ plugin for adding X-Ray Tracing to Lambda functions.",
   "main": "src/index.js",
   "scripts": {
